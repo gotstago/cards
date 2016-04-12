@@ -1,6 +1,6 @@
 package table
 
-import "github.com/gotstago/joker/hand"
+import "github.com/gotstago/cards/hand"
 
 // CardVisibility indicates a HoleCard's visibility to other players
 type CardVisibility string

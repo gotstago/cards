@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/gotstago/joker/hand"
+	"github.com/gotstago/cards/hand"
 )
 
 var (

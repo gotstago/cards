@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/gotstago/joker/hand"
+	"github.com/gotstago/cards/hand"
 )
 
 // Results is a mapping of each seat with its slice of results.

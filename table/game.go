@@ -3,8 +3,8 @@ package table
 import (
 	"errors"
 
-	"github.com/gotstago/joker/hand"
-	"github.com/gotstago/joker/util"
+	"github.com/gotstago/cards/hand"
+	"github.com/gotstago/cards/util"
 )
 
 // A Game represents one of the different poker variations.
