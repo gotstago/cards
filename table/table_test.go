@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/gotstago/cards/hand"
-	"github.com/gotstago/cards/table"
+	"github.com/gotstago/joker/hand"
+	"github.com/gotstago/joker/table"
 )
 
 func register() {
@@ -21,6 +21,7 @@ func Player(id string, actions []PlayerAction) *TestPlayer {
 	return &TestPlayer{id: id, actions: actions, index: 0}
 }
 
+//TestPlayer is a mock
 type TestPlayer struct {
 	id      string
 	actions []PlayerAction
@@ -71,13 +72,13 @@ func TestToAndFronJSON(t *testing.T) {
 
 	// create table
 	opts := table.Config{
-		Game: table.Holdem,
+		Game: table.Tarabish,
 		Stakes: table.Stakes{
 			SmallBet: 1,
 			BigBet:   2,
 			Ante:     0,
 		},
-		NumOfSeats: 6,
+		NumOfSeats: 4,
 		Limit:      table.NoLimit,
 	}
 	p1 := Player("1", []PlayerAction{})

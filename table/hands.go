@@ -1,6 +1,6 @@
 package table
 
-import "github.com/gotstago/cards/hand"
+import "github.com/gotstago/joker/hand"
 
 // handCreationFunc represents the function signature for creating a hand.
 type handCreationFunc func(holeCards []*hand.Card, board []*hand.Card) *hand.Hand

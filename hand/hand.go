@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gotstago/cards/util"
+	"github.com/gotstago/joker/util"
 )
 
 // A Ranking is one of the ten possible hand rankings that determine the

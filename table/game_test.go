@@ -3,8 +3,8 @@ package table
 import (
 	"testing"
 
-	"github.com/gotstago/cards/hand"
-	"github.com/gotstago/cards/jokertest"
+	"github.com/gotstago/joker/hand"
+	"github.com/gotstago/joker/jokertest"
 )
 
 var tests = []struct {

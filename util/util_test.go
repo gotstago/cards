@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/gotstago/cards/util"
+	"github.com/gotstago/joker/util"
 )
 
 type combo struct {

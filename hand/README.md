@@ -6,7 +6,7 @@ Poker hand evaluation and ranking written in go (golang)
 To install run:
 
 ```
-go get github.com/gotstago/cards/hand
+go get github.com/loganjspears/joker/hand
 ```
 
 ```go
@@ -15,7 +15,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/gotstago/cards/hand"
+	"github.com/loganjspears/joker/hand"
 )
 
 func main() {

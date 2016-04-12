@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gotstago/cards/hand"
-	"github.com/gotstago/cards/table"
+	"github.com/gotstago/joker/hand"
+	"github.com/gotstago/joker/table"
 )
 
 const (
@@ -86,18 +86,26 @@ func (p *player) Action() (table.Action, int) {
 func main() {
 	p1 := playerFromInput("Player 1")
 	p2 := playerFromInput("Player 2")
+	p3 := playerFromInput("Player 3")
+	p4 := playerFromInput("Player 4")
 
 	opts := table.Config{
-		Game:       table.Holdem,
+		Game:       table.Tarabish,
 		Limit:      table.NoLimit,
 		Stakes:     table.Stakes{SmallBet: 1, BigBet: 2, Ante: 0},
-		NumOfSeats: 2,
+		NumOfSeats: 4,
 	}
 	tbl = table.New(opts, hand.NewDealer())
 	if err := tbl.Sit(p1, 0, 100); err != nil {
 		panic(err)
 	}
 	if err := tbl.Sit(p2, 1, 100); err != nil {
+		panic(err)
+	}
+	if err := tbl.Sit(p3, 2, 100); err != nil {
+		panic(err)
+	}
+	if err := tbl.Sit(p4, 3, 100); err != nil {
 		panic(err)
 	}
 
@@ -144,7 +152,8 @@ func printResults(tbl *table.Table, results map[int][]*table.Result) {
 func playerFromInput(desc string) table.Player {
 	var input string
 	fmt.Printf("\nPick %s name:\n", desc)
-	if _, err := fmt.Scan(&input); err != nil {
+	//wait for input from user at command line.
+    if _, err := fmt.Scan(&input); err != nil {
 		fmt.Println("Error", err)
 		return playerFromInput(desc)
 	}

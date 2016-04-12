@@ -3,8 +3,8 @@ package table
 import (
 	"errors"
 
-	"github.com/gotstago/cards/hand"
-	"github.com/gotstago/cards/util"
+	"github.com/gotstago/joker/hand"
+	"github.com/gotstago/joker/util"
 )
 
 // A Game represents one of the different poker variations.
@@ -43,11 +43,15 @@ const (
 	// "eight or better" meaning that it must have or be below an eight high.
 	// StudHiLo is typically played Fixed or Pot Limit.
 	StudHiLo
+
+	// Tarabish (also known as Stud8) is not Poker
+	// Tarabish is typically played by 4 players.
+	Tarabish
 )
 
 // Games returns all Games.
 func Games() []Game {
-	return []Game{Holdem, OmahaHi, OmahaHiLo, Razz, StudHi, StudHiLo}
+	return []Game{Holdem, OmahaHi, OmahaHiLo, Razz, StudHi, StudHiLo, Tarabish}
 }
 
 // MarshalText implements the encoding.TextMarshaler interface.
@@ -81,6 +85,8 @@ func (g Game) get() game {
 		return razz
 	case StudHiLo:
 		return studHiLo
+    case Tarabish:
+        return tarabish
 	}
 	panic("unreachable")
 }
@@ -99,6 +105,11 @@ var (
 	omahaHiLo game = &holdemGame{
 		Split:   true,
 		IsOmaha: true,
+	}
+
+	tarabish game = &tarabishGame{
+		Split:  true,
+		IsOmaha: false,
 	}
 
 	studHi game = &studGame{
@@ -251,6 +262,131 @@ func (g *holdemGame) RoundStartSeat(holeCards holeCards, r round) int {
 }
 
 func (g *holdemGame) FixedLimit(opts Config, r round) int {
+	switch r {
+	case turn, river:
+		return opts.Stakes.BigBet
+	}
+	return opts.Stakes.SmallBet
+}
+
+type tarabishGame struct {
+	Split   bool
+	IsOmaha bool
+}
+
+func (g *tarabishGame) NumOfRounds() int {
+	return 4
+}
+
+func (g *tarabishGame) MaxSeats() int {
+	return 10
+}
+
+func (g *tarabishGame) HoleCards(deck *hand.Deck, r round) []*HoleCard {
+	numOfCards := 2
+	if g.IsOmaha {
+		numOfCards = 4
+	}
+	switch r {
+	case preflop:
+		return holeCardsPopMulti(deck, Concealed, numOfCards)
+	}
+	return []*HoleCard{}
+}
+
+func (g *tarabishGame) BoardCards(deck *hand.Deck, r round) []*hand.Card {
+	switch r {
+	case flop:
+		return deck.PopMulti(3)
+	case turn:
+		return deck.PopMulti(1)
+	case river:
+		return deck.PopMulti(1)
+	}
+	return []*hand.Card{}
+}
+
+func (g *tarabishGame) SplitPot() bool {
+	return g.Split
+}
+
+func (g *tarabishGame) Sorting() hand.Sorting {
+	return hand.SortingHigh
+}
+
+func (g *tarabishGame) FormHighHand(holeCards []*hand.Card, board []*hand.Card) *hand.Hand {
+	if !g.IsOmaha {
+		cards := append(board, holeCards...)
+		return hand.New(cards)
+	}
+
+	opts := func(c *hand.Config) {}
+	hands := omahaHands(holeCards, board, opts)
+	hands = hand.Sort(hand.SortingHigh, hand.DESC, hands...)
+	return hands[0]
+}
+
+func (g *tarabishGame) FormLowHand(holeCards []*hand.Card, board []*hand.Card) *hand.Hand {
+	if !g.IsOmaha {
+		return nil
+	}
+
+	hands := omahaHands(holeCards, board, hand.AceToFiveLow)
+	hands = hand.Sort(hand.SortingLow, hand.DESC, hands...)
+	if hands[0].CompareTo(eightOrBetter) <= 0 {
+		return hands[0]
+	}
+	return nil
+}
+
+func (g *tarabishGame) ForcedBet(holeCards holeCards, opts Config, r round, seat, relativePos int) int {
+	chips := 0
+	if r != preflop {
+		return chips
+	}
+
+	chips += opts.Stakes.Ante
+
+	// reduce blind sizes if fixed limit
+	smallBet := opts.Stakes.SmallBet
+	bigBet := opts.Stakes.BigBet
+	if opts.Limit == FixedLimit {
+		smallBet /= 2
+		bigBet /= 2
+	}
+
+	numOfPlayers := len(holeCards)
+	if numOfPlayers == 2 {
+		switch relativePos {
+		case 0:
+			chips += smallBet
+		case 1:
+			chips += bigBet
+		}
+	} else {
+		switch relativePos {
+		case 1:
+			chips += smallBet
+		case 2:
+			chips += bigBet
+		}
+	}
+	return chips
+}
+
+func (g *tarabishGame) RoundStartSeat(holeCards holeCards, r round) int {
+	numOfPlayers := len(holeCards)
+	if r != preflop {
+		return 1
+	}
+	switch numOfPlayers {
+	case 2, 3:
+		return 0
+	}
+	return 3
+}
+
+func (g *tarabishGame) FixedLimit(opts Config, r round) int {
 	switch r {
 	case turn, river:
 		return opts.Stakes.BigBet
