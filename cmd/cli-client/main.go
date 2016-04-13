@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	tbl *table.Table
+	tbl *table.PokerTable
 )
 
 type player struct {
@@ -113,7 +113,7 @@ func main() {
 	fmt.Println("DONE")
 }
 
-func runTable(tbl *table.Table) {
+func runTable(tbl *table.PokerTable) {
 	for {
 		results, done, err := tbl.Next()
 		if done {
@@ -129,7 +129,7 @@ func runTable(tbl *table.Table) {
 	}
 }
 
-func printTable(tbl *table.Table) {
+func printTable(tbl *table.PokerTable) {
 	players := tbl.Players()
 	fmt.Println("")
 	fmt.Println("-----Table-----")
@@ -140,7 +140,7 @@ func printTable(tbl *table.Table) {
 	fmt.Println("")
 }
 
-func printResults(tbl *table.Table, results map[int][]*table.Result) {
+func printResults(tbl *table.PokerTable, results map[int][]*table.Result) {
 	players := tbl.Players()
 	for seat, resultList := range results {
 		for _, result := range resultList {
