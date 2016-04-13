@@ -433,7 +433,7 @@ func (t *PokerTable) ValidActions() []Action {
 // that the table can not continue.
 func (t *PokerTable) Next() (results map[int][]*Result, done bool, err error) {
 	if !t.startedHand {
-		if !t.hasNextHand() {
+		if !t.hasNextHand() && !(t.opts.Game == Tarabish){
 			return nil, true, ErrInsufficientPlayers
 		}
 		t.setUpHand()

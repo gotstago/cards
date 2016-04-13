@@ -15,6 +15,7 @@ func register() {
 type PlayerAction struct {
 	Action table.Action
 	Chips  int
+    ActionCommand string
 }
 
 func Player(id string, actions []PlayerAction) *TestPlayer {
@@ -29,23 +30,27 @@ type TestPlayer struct {
 }
 
 func (p *TestPlayer) Check() {
-	p.actions = append(p.actions, PlayerAction{table.Check, 0})
+	p.actions = append(p.actions, PlayerAction{Action:table.Check})
 }
 
 func (p *TestPlayer) Call() {
-	p.actions = append(p.actions, PlayerAction{table.Call, 0})
+	p.actions = append(p.actions, PlayerAction{Action:table.Call})
+}
+
+func (p *TestPlayer) Bid(playerBid string) {
+	p.actions = append(p.actions, PlayerAction{Action:table.Bid,ActionCommand:playerBid})
 }
 
 func (p *TestPlayer) Fold() {
-	p.actions = append(p.actions, PlayerAction{table.Fold, 0})
+	p.actions = append(p.actions, PlayerAction{Action:table.Fold})
 }
 
 func (p *TestPlayer) Bet(amount int) {
-	p.actions = append(p.actions, PlayerAction{table.Bet, amount})
+	p.actions = append(p.actions, PlayerAction{Action:table.Bet, Chips:amount})
 }
 
 func (p *TestPlayer) Raise(amount int) {
-	p.actions = append(p.actions, PlayerAction{table.Raise, amount})
+	p.actions = append(p.actions, PlayerAction{Action:table.Raise, Chips:amount})
 }
 
 func (p *TestPlayer) ID() string {

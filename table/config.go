@@ -14,6 +14,9 @@ const (
 
 	// Call is a match of a bet or raise.
 	Call Action = "Call"
+    
+    //Bid is an announcement to either pass or call trump
+    Bid Action = "Bid"
 
 	// Bet is a wager that others must match to remain a contender
 	// in the current pot.

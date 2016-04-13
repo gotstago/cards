@@ -69,41 +69,47 @@ func TestTarRaises(t *testing.T) {
 
 	tbl := table.New(opts, hand.NewDealer())
 
-	if err := tbl.Sit(p1, table.Parameters{0,0}); err != nil {
+	if err := tbl.Sit(p1, table.Parameters{Seat:0}); err != nil {
 		t.Fatal(err)
 	}
-	if err := tbl.Sit(p2, table.Parameters{1,0}); err != nil {
+	if err := tbl.Sit(p2, table.Parameters{Seat:1}); err != nil {
 		t.Fatal(err)
 	}
-	if err := tbl.Sit(p3, table.Parameters{2,0}); err != nil {
+	if err := tbl.Sit(p3, table.Parameters{Seat:2}); err != nil {
 		t.Fatal(err)
 	}
-	if err := tbl.Sit(p4, table.Parameters{3,0}); err != nil {
+	if err := tbl.Sit(p4, table.Parameters{Seat:3}); err != nil {
 		t.Fatal(err)
 	}
-
+    
+    //bidding
+    p1.Bid("pass")
+    p2.Bid("pass")
+    // p2.Fold()
+    // p3.Fold()
+    // p4.Fold()
 	// preflop
-	p1.Call()
-	p2.Call()
-	p3.Call()
-	p4.Check()
+	// p1.Call()
+	// p2.Call()
+	// p3.Call()
+	// p4.Check()
 
-	// flop
-	p3.Check()
-	p4.Check()
-	p1.Bet(48)
-	p2.Call()
-	p3.Raise(2)
-	p4.Raise(8)
+	// // flop
+	// p3.Check()
+	// p4.Check()
+	// p1.Bet(48)
+	// p2.Call()
+	// p3.Raise(2)
+	// p4.Raise(8)
 
-	for i := 0; i < 12; i++ {
+	for i := 0; i < 2; i++ {
 		if _, _, err := tbl.Next(); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	if tbl.Action() != 1 {
-		t.Fatal("action should be on player 2")
+		t.Fatal("action should be on player 2",tbl.Action())
 	}
 
 	players := tbl.Players()
