@@ -16,6 +16,8 @@ func TestDeck(t *testing.T) {
 		card := deck.Pop()
 		if actual[i] != card {
 			t.Fatalf("Pop() = %s; want %s; i = %d", card, actual[i], i)
-		}
+		}else{
+            t.Log("popped :: ",card)
+        }
 	}
 }

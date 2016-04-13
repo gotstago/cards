@@ -156,9 +156,37 @@ func (state *PlayerState) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Table represent a poker table and dealer.  A table manages the
+// Table represents a table.
+type Table interface {
+	// Sit .
+	Sit(p Player, prm Parameters) error
+
+    // Next is the iterator function of the table.  Next updates the
+    // table's state while calling player's Action() method to get
+    // an action for each player's turn.  New hands are started
+    // automatically if there are two or more eligible players.  Next
+    // moves through each round of betting until the showdown at which
+    // point are paid out.  The results are returned as a map of seats
+    // to pot results. If the round is not a showdown then results are
+    // nil. err is nil unless there are insufficient players to start
+    // the next hand or a player's action has an error. done indicates
+    // that the table can not continue.
+    Next() (results map[int][]*Result, done bool, err error) 
+
+
+    // Action returns the seat that the action is currently on.  If no
+    // seat has the action then -1 is returned.
+    Action() int
+    
+    // Players returns a mapping of seats to player states.  Empty seats
+    // are not included.
+    Players() map[int]*PlayerState
+}
+
+
+// PokerTable represent a poker table and dealer.  A table manages the
 // game state and all player interactions at the table.
-type Table struct {
+type PokerTable struct {
 	opts        Config
 	dealer      hand.Dealer
 	deck        *hand.Deck
@@ -176,14 +204,14 @@ type Table struct {
 // start playing hands, at least two players must be seated and the
 // Next() function must be called.  If the number of seats is invalid
 // for the Game specified New panics.
-func New(opts Config, dealer hand.Dealer) *Table {
+func New(opts Config, dealer hand.Dealer) *PokerTable {
 	if int(opts.NumOfSeats) > opts.Game.get().MaxSeats() {
 		format := "table: %s has a maximum of %d seats but attempted %d"
 		s := fmt.Sprintf(format, opts.Game, opts.Game.get().MaxSeats(), opts.NumOfSeats)
 		panic(s)
 	}
 
-	return &Table{
+	return &PokerTable{
 		opts:    opts,
 		dealer:  dealer,
 		deck:    dealer.Deck(),
@@ -196,43 +224,43 @@ func New(opts Config, dealer hand.Dealer) *Table {
 
 // Action returns the seat that the action is currently on.  If no
 // seat has the action then -1 is returned.
-func (t *Table) Action() int {
+func (t *PokerTable) Action() int {
 	return t.action
 }
 
 // Board returns the current community cards.  An empty slice is
 // returned if there are no community cards or the game doesn't
 // support community cards.
-func (t *Table) Board() []*hand.Card {
+func (t *PokerTable) Board() []*hand.Card {
 	c := []*hand.Card{}
 	return append(c, t.board...)
 }
 
 // Button returns the seat that the button is currently on.
-func (t *Table) Button() int {
+func (t *PokerTable) Button() int {
 	return t.button
 }
 
 // CurrentPlayer returns the player the action is currently on.  If
 // no player is current then it returns nil.
-func (t *Table) CurrentPlayer() *PlayerState {
+func (t *PokerTable) CurrentPlayer() *PlayerState {
 	return t.players[t.Action()]
 }
 
 // Game returns the game of the table.
-func (t *Table) Game() Game {
+func (t *PokerTable) Game() Game {
 	return t.opts.Game
 }
 
 // Limit returns the limit of the table.
-func (t *Table) Limit() Limit {
+func (t *PokerTable) Limit() Limit {
 	return t.opts.Limit
 }
 
 // MaxRaise returns the maximum number of chips that can be bet or
 // raised by the current player.  If there is no current player then
 // -1 is returned.
-func (t *Table) MaxRaise() int {
+func (t *PokerTable) MaxRaise() int {
 	player := t.CurrentPlayer()
 	if isNil(player) {
 		return -1
@@ -266,7 +294,7 @@ func (t *Table) MaxRaise() int {
 // MinRaise returns the minimum number of chips that can be bet or
 // raised by the current player. If there is no current player then
 // -1 is returned.
-func (t *Table) MinRaise() int {
+func (t *PokerTable) MinRaise() int {
 	player := t.CurrentPlayer()
 	if isNil(player) {
 		return -1
@@ -286,13 +314,13 @@ func (t *Table) MinRaise() int {
 }
 
 // NumOfSeats returns the number of seats.
-func (t *Table) NumOfSeats() int {
+func (t *PokerTable) NumOfSeats() int {
 	return int(t.opts.NumOfSeats)
 }
 
 // Outstanding returns the number of chips owed to the pot by the
 // current player.  If there is no current player then -1 is returned.
-func (t *Table) Outstanding() int {
+func (t *PokerTable) Outstanding() int {
 	player := t.CurrentPlayer()
 	if isNil(player) {
 		return -1
@@ -305,7 +333,7 @@ func (t *Table) Outstanding() int {
 
 // Players returns a mapping of seats to player states.  Empty seats
 // are not included.
-func (t *Table) Players() map[int]*PlayerState {
+func (t *PokerTable) Players() map[int]*PlayerState {
 	players := map[int]*PlayerState{}
 	for seat, p := range t.players {
 		players[seat] = p
@@ -315,7 +343,7 @@ func (t *Table) Players() map[int]*PlayerState {
 
 // View returns a view of the table that only contains information
 // privileged to the given player.
-func (t *Table) View(p Player) *Table {
+func (t *PokerTable) View(p Player) *PokerTable {
 	players := map[int]*PlayerState{}
 	for seat, player := range t.players {
 		if p.ID() == player.Player().ID() {
@@ -334,7 +362,7 @@ func (t *Table) View(p Player) *Table {
 		}
 	}
 
-	return &Table{
+	return &PokerTable{
 		opts:        t.opts,
 		deck:        &hand.Deck{Cards: []*hand.Card{}},
 		button:      t.button,
@@ -349,22 +377,22 @@ func (t *Table) View(p Player) *Table {
 }
 
 // Pot returns the current pot.
-func (t *Table) Pot() *Pot {
+func (t *PokerTable) Pot() *Pot {
 	return t.pot
 }
 
 // Round returns the current round.
-func (t *Table) Round() int {
+func (t *PokerTable) Round() int {
 	return t.round
 }
 
 // Stakes returns the stakes.
-func (t *Table) Stakes() Stakes {
+func (t *PokerTable) Stakes() Stakes {
 	return t.opts.Stakes
 }
 
 // String returns a string useful for debugging.
-func (t *Table) String() string {
+func (t *PokerTable) String() string {
 	const format = "{Button: Seat %d, Current Player: %s, Round %d, Board: %s, Pot: %d}\n"
 	current := "None"
 	if t.action != -1 && !isNil(t.CurrentPlayer()) {
@@ -376,7 +404,7 @@ func (t *Table) String() string {
 
 // ValidActions returns the actions that can be taken by the current
 // player.
-func (t *Table) ValidActions() []Action {
+func (t *PokerTable) ValidActions() []Action {
 	player := t.CurrentPlayer()
 	if player.AllIn() || player.Out() {
 		return []Action{}
@@ -403,7 +431,7 @@ func (t *Table) ValidActions() []Action {
 // nil. err is nil unless there are insufficient players to start
 // the next hand or a player's action has an error. done indicates
 // that the table can not continue.
-func (t *Table) Next() (results map[int][]*Result, done bool, err error) {
+func (t *PokerTable) Next() (results map[int][]*Result, done bool, err error) {
 	if !t.startedHand {
 		if !t.hasNextHand() {
 			return nil, true, ErrInsufficientPlayers
@@ -455,36 +483,42 @@ func (t *Table) Next() (results map[int][]*Result, done bool, err error) {
 	return nil, false, nil
 }
 
+//Parameters carry runtime parameters
+type Parameters struct{
+    Seat int;
+    Chips int;
+}
+
 // Sit sits the player at the table with the given amount of chips.
 // An error is return if the seat is invalid, the player is already
 // seated, the seat is already occupied, or the chips are outside
 // the valid buy in amounts.
-func (t *Table) Sit(p Player, seat, chips int) error {
-	if !t.validSeat(seat) {
+func (t *PokerTable) Sit(p Player, prm Parameters) error {
+	if !t.validSeat(prm.Seat) {
 		return ErrInvalidSeat
 	} else if t.isSeated(p) {
 		return ErrAlreadySeated
-	} else if _, occupied := t.players[seat]; occupied {
+	} else if _, occupied := t.players[prm.Seat]; occupied {
 		return ErrSeatOccupied
 	}
 
 	min := (t.opts.Stakes.SmallBet * 50)
 	max := (t.opts.Stakes.SmallBet * 200)
-	if chips < min || chips > max {
+	if prm.Chips < min || prm.Chips > max {
 		return ErrInvalidBuyin
 	}
 
-	t.players[seat] = &PlayerState{
+	t.players[prm.Seat] = &PlayerState{
 		player:    p,
 		holeCards: []*HoleCard{},
-		chips:     chips,
+		chips:     prm.Chips,
 	}
 	return nil
 }
 
 // Stand removes the player from the table.  If the player isn't
 // seated the command is ignored.
-func (t *Table) Stand(p Player) {
+func (t *PokerTable) Stand(p Player) {
 	for seat, pl := range t.players {
 		if pl.player.ID() == p.ID() {
 			delete(t.players, seat)
@@ -507,7 +541,7 @@ type tableJSON struct {
 }
 
 // MarshalJSON implements the json.Marshaler interface.
-func (t *Table) MarshalJSON() ([]byte, error) {
+func (t *PokerTable) MarshalJSON() ([]byte, error) {
 	players := map[string]*PlayerState{}
 	for seat, player := range t.Players() {
 		players[strconv.FormatInt(int64(seat), 10)] = player
@@ -529,7 +563,7 @@ func (t *Table) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (t *Table) UnmarshalJSON(b []byte) error {
+func (t *PokerTable) UnmarshalJSON(b []byte) error {
 	tJSON := &tableJSON{}
 	if err := json.Unmarshal(b, tJSON); err != nil {
 		return err
@@ -559,7 +593,7 @@ func (t *Table) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (t *Table) setUpHand() {
+func (t *PokerTable) setUpHand() {
 	t.deck = t.dealer.Deck()
 	t.round = 0
 	t.button = t.nextSeat(t.button+1, false)
@@ -575,7 +609,7 @@ func (t *Table) setUpHand() {
 	}
 }
 
-func (t *Table) setUpRound() {
+func (t *PokerTable) setUpRound() {
 	// deal board cards
 	bCards := t.game().BoardCards(t.deck, round(t.round))
 	t.board = append(t.board, bCards...)
@@ -613,7 +647,7 @@ func (t *Table) setUpRound() {
 	}
 }
 
-func (t *Table) payoutResults(resultsMap map[int][]*Result) {
+func (t *PokerTable) payoutResults(resultsMap map[int][]*Result) {
 	for seat, results := range resultsMap {
 		for _, result := range results {
 			amount := t.players[seat].chips + result.Chips
@@ -624,7 +658,7 @@ func (t *Table) payoutResults(resultsMap map[int][]*Result) {
 	}
 }
 
-func (t *Table) handleAction(seat int, p *PlayerState, a Action, chips int) error {
+func (t *PokerTable) handleAction(seat int, p *PlayerState, a Action, chips int) error {
 	// validate action
 	validAction := false
 	for _, va := range t.ValidActions() {
@@ -670,7 +704,7 @@ func (t *Table) handleAction(seat int, p *PlayerState, a Action, chips int) erro
 	return nil
 }
 
-func (t *Table) addToPot(seat, chips int) {
+func (t *PokerTable) addToPot(seat, chips int) {
 	p := t.players[seat]
 	if chips >= p.chips {
 		chips = p.chips
@@ -680,7 +714,7 @@ func (t *Table) addToPot(seat, chips int) {
 	t.pot.contribute(seat, chips)
 }
 
-func (t *Table) nextSeat(seat int, playing bool) int {
+func (t *PokerTable) nextSeat(seat int, playing bool) int {
 	count := 0
 	seat = seat % t.NumOfSeats()
 	for count < t.NumOfSeats() {
@@ -694,7 +728,7 @@ func (t *Table) nextSeat(seat int, playing bool) int {
 	return -1
 }
 
-func (t *Table) hasNextHand() bool {
+func (t *PokerTable) hasNextHand() bool {
 	count := 0
 	for _, player := range t.players {
 		if player.chips > 0 {
@@ -704,7 +738,7 @@ func (t *Table) hasNextHand() bool {
 	return count > 1
 }
 
-func (t *Table) isSeated(p Player) bool {
+func (t *PokerTable) isSeated(p Player) bool {
 	for _, pl := range t.players {
 		if p.ID() == pl.player.ID() {
 			return true
@@ -713,11 +747,11 @@ func (t *Table) isSeated(p Player) bool {
 	return false
 }
 
-func (t *Table) validSeat(seat int) bool {
+func (t *PokerTable) validSeat(seat int) bool {
 	return seat >= 0 && seat < t.NumOfSeats()
 }
 
-func (t *Table) relativePosition(seat int) int {
+func (t *PokerTable) relativePosition(seat int) int {
 	current := t.button
 	count := 0
 	for {
@@ -730,7 +764,7 @@ func (t *Table) relativePosition(seat int) int {
 	return count
 }
 
-func (t *Table) holeCards() map[int][]*HoleCard {
+func (t *PokerTable) holeCards() map[int][]*HoleCard {
 	hCards := map[int][]*HoleCard{}
 	for seat, player := range t.players {
 		hCards[seat] = player.holeCards
@@ -738,19 +772,19 @@ func (t *Table) holeCards() map[int][]*HoleCard {
 	return hCards
 }
 
-func (t *Table) resetActed() {
+func (t *PokerTable) resetActed() {
 	for _, player := range t.players {
 		player.acted = false
 	}
 }
 
-func (t *Table) resetCanRaise(seat int) {
+func (t *PokerTable) resetCanRaise(seat int) {
 	for s, player := range t.players {
 		player.canRaise = !(s == seat)
 	}
 }
 
-func (t *Table) everyoneFolded() bool {
+func (t *PokerTable) everyoneFolded() bool {
 	count := 0
 	for _, player := range t.players {
 		if !player.out {
@@ -760,7 +794,7 @@ func (t *Table) everyoneFolded() bool {
 	return count < 2
 }
 
-func (t *Table) game() game {
+func (t *PokerTable) game() game {
 	return t.opts.Game.get()
 }
 

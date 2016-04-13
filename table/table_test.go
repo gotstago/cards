@@ -83,7 +83,7 @@ func TestToAndFronJSON(t *testing.T) {
 	}
 	p1 := Player("1", []PlayerAction{})
 	tbl := table.New(opts, hand.NewDealer())
-	if err := tbl.Sit(p1, 0, 100); err != nil {
+	if err := tbl.Sit(p1, table.Parameters{0,100}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -93,7 +93,7 @@ func TestToAndFronJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 	// unmarshal from json
-	tblCopy := &table.Table{}
+	tblCopy := &table.PokerTable{}
 	if err := json.Unmarshal(b, tblCopy); err != nil {
 		t.Fatal(err)
 	}
@@ -130,23 +130,23 @@ func TestSeating(t *testing.T) {
 	tbl := table.New(opts, hand.NewDealer())
 
 	// sit player 1
-	if err := tbl.Sit(p1, 0, 100); err != nil {
+	if err := tbl.Sit(p1, table.Parameters{0,100}); err != nil {
 		t.Fatal(err)
 	}
 
 	// can't sit dup player 1
 
-	if err := tbl.Sit(p1Dup, 1, 100); err != table.ErrAlreadySeated {
+	if err := tbl.Sit(p1Dup, table.Parameters{1,100}); err != table.ErrAlreadySeated {
 		t.Fatal("should already be seated")
 	}
 
 	// can't sit player 2 in invalid seat
-	if err := tbl.Sit(p2, 6, 100); err != table.ErrInvalidSeat {
+	if err := tbl.Sit(p2, table.Parameters{6,100}); err != table.ErrInvalidSeat {
 		t.Fatal("can't sit in invalid seat")
 	}
 
 	// can't sit player 2 in occupied seat
-	if err := tbl.Sit(p2, 0, 100); err != table.ErrSeatOccupied {
+	if err := tbl.Sit(p2, table.Parameters{0,100}); err != table.ErrSeatOccupied {
 		t.Fatal("can't sit in occupied seat")
 	}
 }
@@ -171,16 +171,16 @@ func TestRaises(t *testing.T) {
 
 	tbl := table.New(opts, hand.NewDealer())
 
-	if err := tbl.Sit(p1, 0, 50); err != nil {
+	if err := tbl.Sit(p1, table.Parameters{0,50}); err != nil {
 		t.Fatal(err)
 	}
-	if err := tbl.Sit(p2, 1, 100); err != nil {
+	if err := tbl.Sit(p2, table.Parameters{1,100}); err != nil {
 		t.Fatal(err)
 	}
-	if err := tbl.Sit(p3, 2, 52); err != nil {
+	if err := tbl.Sit(p3, table.Parameters{2,52}); err != nil {
 		t.Fatal(err)
 	}
-	if err := tbl.Sit(p4, 3, 60); err != nil {
+	if err := tbl.Sit(p4, table.Parameters{3,60}); err != nil {
 		t.Fatal(err)
 	}
 

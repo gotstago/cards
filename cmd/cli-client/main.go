@@ -96,16 +96,16 @@ func main() {
 		NumOfSeats: 4,
 	}
 	tbl = table.New(opts, hand.NewDealer())
-	if err := tbl.Sit(p1, 0, 100); err != nil {
+	if err := tbl.Sit(p1, table.Parameters{0,100}); err != nil {
 		panic(err)
 	}
-	if err := tbl.Sit(p2, 1, 100); err != nil {
+	if err := tbl.Sit(p2, table.Parameters{1,100}); err != nil {
 		panic(err)
 	}
-	if err := tbl.Sit(p3, 2, 100); err != nil {
+	if err := tbl.Sit(p3, table.Parameters{2,100}); err != nil {
 		panic(err)
 	}
-	if err := tbl.Sit(p4, 3, 100); err != nil {
+	if err := tbl.Sit(p4, table.Parameters{3,100}); err != nil {
 		panic(err)
 	}
 
