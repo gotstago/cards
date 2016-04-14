@@ -38,9 +38,9 @@ func (p *player) Action() (table.Action, int) {
 	current := tbl.CurrentPlayer()
 
 	// get action from input
-	actions := []string{}
+	validActions := []string{}
 	for _, a := range tbl.ValidActions() {
-		actions = append(actions, strings.ToLower(string(a)))
+		validActions = append(validActions, strings.ToLower(string(a)))
 	}
 
 	// show info
@@ -50,7 +50,7 @@ func (p *player) Action() (table.Action, int) {
 	// get action from input
 	var input string
 	actionFormat := "\nPlayer %s Action (%s):\n"
-	fmt.Printf(actionFormat, p.ID(), strings.Join(actions, ","))
+	fmt.Printf(actionFormat, p.ID(), strings.Join(validActions, ","))
 	if _, err := fmt.Scan(&input); err != nil {
 		fmt.Println("Error", err)
 		return p.Action()

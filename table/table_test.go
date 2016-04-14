@@ -61,6 +61,7 @@ func (p *TestPlayer) FromID(id string) (table.Player, error) {
 	return Player(id, []PlayerAction{}), nil
 }
 
+//Action 
 func (p *TestPlayer) Action() (a table.Action, chips int) {
 	if p.index >= len(p.actions) {
 		panic("player " + p.id + " doesn't have enough actions")

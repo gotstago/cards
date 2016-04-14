@@ -166,7 +166,8 @@ func TestTableSetup(t *testing.T) {
     
     //bidding
     p1.Bid("pass")
-    p2.Bid("pass")
+    p1.Action()
+    //p2.Bid("pass")
 
 	for i := 0; i < 2; i++ {
 		if _, _, err := tbl.Next(); err != nil {
