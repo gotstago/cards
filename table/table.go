@@ -405,20 +405,20 @@ func (t *PokerTable) String() string {
 // ValidActions returns the actions that can be taken by the current
 // player.
 func (t *PokerTable) ValidActions() []Action {
-	player := t.CurrentPlayer()
-	if player.AllIn() || player.Out() {
-		return []Action{}
-	}
+	//player := t.CurrentPlayer()
+	// if player.AllIn() || player.Out() {
+	// 	return []Action{}
+	// }
 
-	if t.Outstanding() == 0 {
-		return []Action{Check, Bet}
-	}
+	// if t.Outstanding() == 0 {
+	// 	return []Action{Check, Bet}
+	// }
 
-	if !player.CanRaise() {
-		return []Action{Fold, Call}
-	}
+	// if !player.CanRaise() {
+	// 	return []Action{Fold, Call}
+	// }
 
-	return []Action{Fold, Call, Raise}
+	return []Action{Fold, Call, Raise, Bid}
 }
 
 // Next is the iterator function of the table.  Next updates the
@@ -615,15 +615,15 @@ func (t *PokerTable) setUpRound() {
 	t.board = append(t.board, bCards...)
 	t.resetActed()
 
-	for seat, player := range t.players {
+	for _, player := range t.players {
 		// add hole cards
 		hCards := t.game().HoleCards(t.deck, round(t.round))
 		player.holeCards = append(player.holeCards, hCards...)
 
 		// add forced bets
-		pos := t.relativePosition(seat)
-		chips := t.game().ForcedBet(t.holeCards(), t.opts, round(t.round), seat, pos)
-		t.addToPot(seat, chips)
+		// pos := t.relativePosition(seat)
+		// chips := t.game().ForcedBet(t.holeCards(), t.opts, round(t.round), seat, pos)
+		// t.addToPot(seat, chips)
 	}
 
 	// set starting action position
@@ -632,19 +632,19 @@ func (t *PokerTable) setUpRound() {
 	t.action = t.nextSeat(seat, true)
 
 	// set raise amounts
-	t.minRaise = t.opts.Stakes.BigBet
-	t.resetCanRaise(-1)
+	// t.minRaise = t.opts.Stakes.BigBet
+	// t.resetCanRaise(-1)
 
 	// if everyone is all in, skip round
-	count := 0
-	for _, player := range t.players {
-		if !player.allin && !player.out {
-			count++
-		}
-	}
-	if count < 2 {
-		t.action = -1
-	}
+	// count := 0
+	// for _, player := range t.players {
+	// 	if !player.allin && !player.out {
+	// 		count++
+	// 	}
+	// }
+	// if count < 2 {
+	// 	t.action = -1
+	// }
 }
 
 func (t *PokerTable) payoutResults(resultsMap map[int][]*Result) {
