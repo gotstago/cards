@@ -13,11 +13,33 @@ import (
 type StateMachine struct {
 	err       bool
 	callTrace []string
+    bids []string
+    
 }
 
 // Start implements StateFn.
 func (s *StateMachine) Start() (StateFn, error) {
 	s.trace()
+	return s.Bid, nil
+}
+
+// Bid implements StateFn.
+func (s *StateMachine) Bid() (StateFn, error) {
+	s.trace()
+    if len(s.bids) == 0 {
+        s.bids = append(s.bids,"pass")
+        return s.Bid, nil
+    }
+    currentBid := s.bids[len(s.bids) - 1]
+    if currentBid == "pass" && len(s.bids) < 4{
+        if len(s.bids) == 3 {
+            s.bids = append(s.bids,"hearts")
+            return s.Middle, nil
+        }else{
+            s.bids = append(s.bids,"pass")
+        }
+        return s.Bid, nil
+    }
 	return s.Middle, nil
 }
 
@@ -77,6 +99,14 @@ func TestExecutor(t *testing.T) {
 			log: []string{
 				"StateMachine[tester]: StateFn(Start) starting",
 				"StateMachine[tester]: StateFn(Start) finished",
+				"StateMachine[tester]: StateFn(Bid) starting",
+				"StateMachine[tester]: StateFn(Bid) finished",
+				"StateMachine[tester]: StateFn(Bid) starting",
+				"StateMachine[tester]: StateFn(Bid) finished",
+				"StateMachine[tester]: StateFn(Bid) starting",
+				"StateMachine[tester]: StateFn(Bid) finished",
+				"StateMachine[tester]: StateFn(Bid) starting",
+				"StateMachine[tester]: StateFn(Bid) finished",
 				"StateMachine[tester]: StateFn(Middle) starting",
 				"StateMachine[tester]: StateFn(Middle) finished",
 				"StateMachine[tester]: StateFn(End) starting",
@@ -84,6 +114,10 @@ func TestExecutor(t *testing.T) {
 				"StateMachine[tester]: Execute() completed with no issues",
 				"StateMachine[tester]: The following is the StateFn's called with this execution:",
 				"StateMachine[tester]: \tStart",
+				"StateMachine[tester]: \tBid",
+				"StateMachine[tester]: \tBid",
+				"StateMachine[tester]: \tBid",
+				"StateMachine[tester]: \tBid",
 				"StateMachine[tester]: \tMiddle",
 				"StateMachine[tester]: \tEnd",
 			},
@@ -93,6 +127,7 @@ func TestExecutor(t *testing.T) {
 	sm := &StateMachine{}
 	for _, test := range tests {
 		sm.err = test.err
+        sm.bids = []string{}
 		l := &logging{}
 		exec := New("tester", sm.Start, Reset(sm.reset), LogFacility(l.Log))
 		if test.shouldLog {
@@ -102,6 +137,7 @@ func TestExecutor(t *testing.T) {
 		}
 
 		err := exec.Execute()
+        t.Logf("bids %v",sm.bids)
 		switch {
 		case err == nil && test.err:
 			t.Errorf("Test %q: got err == nil, want err != nil", test.desc)
@@ -118,7 +154,7 @@ func TestExecutor(t *testing.T) {
 		if diff := pretty.Diff(l.msgs, test.log); len(diff) != 0 {
 			t.Errorf("Test %q: log was not as expected:\n%s", test.desc, strings.Join(diff, "\n"))
 		}
-        //t.Log("logging.....",l.msgs)
+        t.Log("logging.....",l.msgs)
 	}
 }
 
