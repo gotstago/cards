@@ -9,12 +9,31 @@ import (
 	"github.com/kr/pretty"
 )
 
+// action represents an intent .
+type action struct {
+	typ actionType // The type of this action.
+	val string     // The value of this action.
+}
+
+// itemType identifies the type of lex items.
+type actionType int
+
+const (
+	actionError    actionType = iota // error occurred; value is text of error
+	actionBid                        // player bid
+	actionAnnounce                   // player announcement - eg. Bella
+	actionPlayCard                   // player submitting a card to play
+	actionDeal                       // player request to deal
+	actionAccuse                     // accuse another player of a misplay
+	actionEOG                        //end of game
+)
+
 // StateMachine provides a simple state machine for testing the Executor.
 type StateMachine struct {
 	err       bool
 	callTrace []string
-    bids []string
-    
+	bids      []string
+	actions   <-chan action
 }
 
 // Start implements StateFn.
@@ -25,21 +44,21 @@ func (s *StateMachine) Start() (StateFn, error) {
 
 // Bid implements StateFn.
 func (s *StateMachine) Bid() (StateFn, error) {
+	fmt.Println("bid action : ", <-s.actions)
 	s.trace()
-    if len(s.bids) == 0 {
-        s.bids = append(s.bids,"pass")
-        return s.Bid, nil
-    }
-    currentBid := s.bids[len(s.bids) - 1]
-    if currentBid == "pass" && len(s.bids) < 4{
-        if len(s.bids) == 3 {
-            s.bids = append(s.bids,"hearts")
-            return s.Middle, nil
-        }else{
-            s.bids = append(s.bids,"pass")
-        }
-        return s.Bid, nil
-    }
+	if len(s.bids) == 0 {
+		s.bids = append(s.bids, "pass")
+		return s.Bid, nil
+	}
+	currentBid := s.bids[len(s.bids)-1]
+	if currentBid == "pass" && len(s.bids) < 4 {
+		if len(s.bids) == 3 {
+			s.bids = append(s.bids, "hearts")
+			return s.Middle, nil
+		}
+		s.bids = append(s.bids, "pass")
+		return s.Bid, nil
+	}
 	return s.Middle, nil
 }
 
@@ -82,12 +101,25 @@ func (l *logging) Log(s string, i ...interface{}) {
 	l.msgs = append(l.msgs, fmt.Sprintf(s, i...))
 }
 
+func gen(actions []action) <-chan action {
+	out := make(chan action)
+	go func() {
+		for _, n := range actions {
+			//fmt.Println("writing action ", n)
+			out <- n
+		}
+		close(out)
+	}()
+	return out
+}
+
 func TestExecutor(t *testing.T) {
 	tests := []struct {
 		desc      string
 		err       bool
 		shouldLog bool
 		log       []string
+		actions   []action
 	}{
 		{
 			desc: "With error in state machine execution",
@@ -121,13 +153,26 @@ func TestExecutor(t *testing.T) {
 				"StateMachine[tester]: \tMiddle",
 				"StateMachine[tester]: \tEnd",
 			},
+			actions: []action{
+				action{typ: actionBid, val: "pass"},
+				action{typ: actionBid, val: "pass"},
+				action{typ: actionBid, val: "pass"},
+				action{typ: actionBid, val: "hearts"},
+			},
 		},
 	}
-
+	// mapD := map[string]int{"apple": 5, "lettuce": 7}
+	// mapB, _ := json.Marshal(mapD)
+	// fmt.Println(string(mapB))
 	sm := &StateMachine{}
 	for _, test := range tests {
 		sm.err = test.err
-        sm.bids = []string{}
+		sm.bids = []string{}
+		actionChan := gen(test.actions)
+		// for elem := range actionChan {
+		// 	t.Log(elem)
+		// }
+		sm.actions = actionChan
 		l := &logging{}
 		exec := New("tester", sm.Start, Reset(sm.reset), LogFacility(l.Log))
 		if test.shouldLog {
@@ -135,9 +180,8 @@ func TestExecutor(t *testing.T) {
 		} else {
 			exec.Log(false)
 		}
-
 		err := exec.Execute()
-        t.Logf("bids %v",sm.bids)
+		t.Logf("bids %v", sm.bids)
 		switch {
 		case err == nil && test.err:
 			t.Errorf("Test %q: got err == nil, want err != nil", test.desc)
@@ -154,7 +198,7 @@ func TestExecutor(t *testing.T) {
 		if diff := pretty.Diff(l.msgs, test.log); len(diff) != 0 {
 			t.Errorf("Test %q: log was not as expected:\n%s", test.desc, strings.Join(diff, "\n"))
 		}
-        t.Log("logging.....",l.msgs)
+		t.Log("logging.....", l.msgs)
 	}
 }
 
