@@ -44,10 +44,20 @@ func (s *StateMachine) Start() (StateFn, error) {
 
 // Bid implements StateFn.
 func (s *StateMachine) Bid() (StateFn, error) {
-	fmt.Println("bid action : ", <-s.actions)
+	//fmt.Println("bid action : ", <-s.actions)
 	s.trace()
+	currentAction := <-s.actions
+    if currentAction.typ != actionBid {
+        fmt.Println("equal? ",currentAction.typ,actionBid)
+        //return s.Bid, nil//retry Bid
+    }
+    if len(s.bids) > 3 {
+        return s.Middle, nil
+    }
 	if len(s.bids) == 0 {
-		s.bids = append(s.bids, "pass")
+		//fmt.Println("bid action : ", <-s.actions)
+		fmt.Println("bid action : ", currentAction)
+		s.bids = append(s.bids, currentAction.val)
 		return s.Bid, nil
 	}
 	currentBid := s.bids[len(s.bids)-1]
@@ -103,10 +113,10 @@ func (l *logging) Log(s string, i ...interface{}) {
 
 func gen(actions []action) <-chan action {
 	out := make(chan action)
-	go func() {
+	go func() { //goroutine allows code to block but does not block main thread
 		for _, n := range actions {
-			//fmt.Println("writing action ", n)
 			out <- n
+			fmt.Println("writing action ", n)
 		}
 		close(out)
 	}()
